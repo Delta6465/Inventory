@@ -1,0 +1,110 @@
+import com.mongodb.ConnectionString;
+import com.mongodb.client.*;
+import org.bson.Document;
+import org.bson.types.ObjectId;
+
+import java.util.Scanner;
+
+public class InventoryManagement {
+
+    private static final String DATABASE_NAME = "Inventory";
+    private static final String COLLECTION_NAME = "product";
+
+    private static MongoCollection<Document> collection;
+    private static Scanner scanner;
+
+    public static void main(String[] args) {
+        // MongoDB connection string, change as per your MongoDB configuration
+        String connectionString = "mongodb://localhost:27017";
+
+        // Set up MongoDB connection
+        MongoClient mongoClient = MongoClients.create(connectionString);
+        MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
+        collection = database.getCollection(COLLECTION_NAME);
+        scanner = new Scanner(System.in);
+
+        boolean exit = false;
+
+        while (!exit) {
+            System.out.println("\nInventory Management System");
+            System.out.println("1. Add Item");
+            System.out.println("2. Update Item Quantity");
+            System.out.println("3. Remove Item");
+            System.out.println("4. View Inventory");
+            System.out.println("5. Exit");
+            System.out.print("Enter your choice: ");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+
+            switch (choice) {
+                case 1:
+                    addItem();
+                    break;
+                case 2:
+                    updateItem();
+                    break;
+                case 3:
+                    removeItem();
+                    break;
+                case 4:
+                    viewInventory();
+                    break;
+                case 5:
+                    exit = true;
+                    System.out.println("Exiting...");
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please enter a valid option.");
+                    break;
+            }
+        }
+
+        mongoClient.close();
+        scanner.close();
+    }
+
+    private static void addItem() {
+        System.out.print("Enter item name: ");
+        String name = scanner.nextLine();
+        System.out.print("Enter item quantity: ");
+        int quantity = scanner.nextInt();
+
+        Document doc = new Document("name", name)
+                .append("quantity", quantity);
+
+        collection.insertOne(doc);
+        System.out.println("Item added successfully.");
+    }
+
+    private static void updateItem() {
+        System.out.print("Enter item name to update: ");
+        String itemName = scanner.nextLine();
+
+        System.out.print("Enter new quantity: ");
+        int newQuantity = scanner.nextInt();
+
+        collection.updateOne(new Document("name", itemName), new Document("$set", new Document("quantity", newQuantity)));
+        System.out.println("Item quantity updated successfully.");
+    }
+
+    private static void removeItem() {
+        System.out.print("Enter item name to remove: ");
+        String itemName = scanner.nextLine();
+
+        collection.deleteOne(new Document("name", itemName));
+        System.out.println("Item removed successfully.");
+    }
+
+    private static void viewInventory() {
+        FindIterable<Document> items = collection.find();
+
+        System.out.println("\nCurrent Inventory:");
+        for (Document doc : items) {
+            String name = doc.getString("name");
+            int quantity = doc.getInteger("quantity");
+
+            System.out.println(name + "\t" + quantity);
+        }
+    }
+}
